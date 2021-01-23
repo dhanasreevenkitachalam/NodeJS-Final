@@ -11,6 +11,7 @@ dishRouter.route('/')
 
 .get((req,res,next) => {
     Dishes.find({})
+    .populate('comments.author')
     .then((dishes)=>{
         res.statusCode=200;
         res.setHeader('Content-Type','application/json')
@@ -46,6 +47,7 @@ dishRouter.route('/')
 dishRouter.route('/:dishId')
 .get((req,res,next)=>{
     Dishes.findById(req.params.dishId)
+    .populate('comments.author')
     .then((dish)=>{
         console.log(dish);
         res.statusCode=200;
@@ -88,6 +90,7 @@ dishRouter.route('/:dishId')
 
  .get((req,res,next) => {
      Dishes.find(req.params.dishId)
+     .populate('comments.author')
      .then((dish)=>{
             if (dish!=null){
                 res.statusCode=200;
@@ -102,26 +105,32 @@ dishRouter.route('/:dishId')
      },(err) => next(err))
      .catch((err) => next(err));
  })
- .post(authenticate.verifyUser,(req, res, next) => {
+ .post(authenticate.verifyUser, (req, res, next) => {
     Dishes.findById(req.params.dishId)
-    .then((dish)=>{
-        if (dish!=null){
+    .then((dish) => {
+        if (dish != null) {
+            req.body.author = req.user._id;
+            console.log('user id: '+req.user._id)
             dish.comments.push(req.body);
             dish.save()
-            .then((dish)=>{
-                res.statusCode=200;
-                res.setHeader('Content-Type','application/json');
-                res.json(dish.comment)
-            })
+            .then((dish) => {
+                Dishes.findById(dish._id)
+                .populate('comments.author')
+                .then((dish) => {
+                    res.statusCode = 200;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.json(dish);
+                })            
+            }, (err) => next(err));
         }
         else {
             err = new Error('Dish ' + req.params.dishId + ' not found');
             err.status = 404;
             return next(err);
         }
-    },(err) => next(err))
-    .catch((err) => next(err))  
- })
+    }, (err) => next(err))
+    .catch((err) => next(err));
+})
  .put(authenticate.verifyUser,(req, res, next) => {
      res.statusCode = 403;
      res.end('PUT operation not supported on /dishes');
@@ -154,6 +163,7 @@ dishRouter.route('/:dishId')
 dishRouter.route('/:dishId/comments/:commentId')
 .get((req,res,next) => {
     Dishes.findById(req.params.dishId)
+    .populate('comments.author')
     .then((dish) => {
         if (dish != null && dish.comments.id(req.params.commentId) != null) {
             res.statusCode = 200;
@@ -189,10 +199,14 @@ dishRouter.route('/:dishId/comments/:commentId')
                 dish.comments.id(req.params.commentId).comment = req.body.comment;                
             }
             dish.save()
+            .then((dish)=>{
+                 Dishes.findById(dish._id)
+            .populate('comments.author')
             .then((dish) => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(dish);                
+                res.json(dish);  
+            })                  
             }, (err) => next(err));
         }
         else if (dish == null) {
