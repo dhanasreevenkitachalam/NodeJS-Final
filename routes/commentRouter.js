@@ -32,12 +32,13 @@ commentRouter.route('/')
             Comments.findById(comment._id)
             .populate('author')
             .then((comment)=>{
+                console.log(comment);
                 res.statusCode=200;
                 res.setHeader('Content-Type','application/json')
                 res.json(comment)
 
-            })
-          
+            },(err)=>next(err))
+          .catch((err)=>next(err))
           
         }, (err) => next(err))
         .catch((err) => next(err));

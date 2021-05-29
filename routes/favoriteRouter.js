@@ -13,7 +13,14 @@ favoriteRouter.use(bodyParser.json())
 favoriteRouter.route('/')
 .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
 .get(cors.corsWithOptions,authenticate.verifyUser,(req,res,next) => {
-    Favorites.find({user:req.user._id})
+    Favorites.find({user:req.user._id},function(err,favorite){
+        if(err){
+            res.send(err);
+        }
+        else{
+
+
+Favorites.find({user:req.user._id})          
     .populate('user')
     .populate('dishes')
     .then((favorite)=>{
@@ -22,7 +29,16 @@ favoriteRouter.route('/')
         res.json(favorite)
     },(err) => next(err))
     .catch((err) => next(err));
-})
+
+    
+        }
+    })
+    })
+   
+   
+   
+   
+
 
 .post(cors.corsWithOptions,authenticate.verifyUser,(req, res, next) => {
 
@@ -94,6 +110,8 @@ favoriteRouter.route('/')
  .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
  .get(cors.cors, authenticate.verifyUser, (req,res,next) => {
     Favorites.findOne({user: req.user._id})
+    .populate('user')
+    .populate('dishes')
     .then((favorites) => {
         if (!favorites) {
             res.statusCode = 200;
